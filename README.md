@@ -14,9 +14,9 @@ Assume you want to transmit 26200000 bit using:
 - QPSK with no coding
 - 16 QAM but utilizing a (255,131) BCH code
 Convolutionally encode 1000 bits by the (2,3,K) code described by:
-g1 (1)=[0 1] 
-g2 (1)=[1 1] 
-g1 (2)=[1 1] 
-g2 (2)=[1 0] 
-g1 (3)=[0 0] 
-g2 (3)=[1 1] 
+<br />g1 (1)=[0 1] 
+<br />g2 (1)=[1 1] 
+<br />g1 (2)=[1 1] 
+<br />g2 (2)=[1 0] 
+<br />g1 (3)=[0 0] 
+<br />g2 (3)=[1 1] 
