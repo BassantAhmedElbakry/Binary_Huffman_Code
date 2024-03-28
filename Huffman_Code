@@ -1,0 +1,148 @@
+clc ; 
+clear; 
+ 
+%%%%%%%%%%%%%%%%%%%%%%%%%%% Take input from user %%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+prompt = 'Enter the number of symbols: '; 
+NumSymbols = input(prompt); 
+ 
+probabilities = zeros(NumSymbols, 1); 
+ 
+for i = 1:NumSymbols 
+    prompt2 = ['Enter the probability of symbol number ' , num2str(i), ' : ']; 
+     
+    % Initial input 
+    probabilities(i) = input(prompt2); 
+     
+    % Validation loop 
+    while(probabilities(i) < 0 || sum(probabilities) > 1) 
+        disp('Invalid input. Probabilities must be non-negative, and their sum 
+should not exceed 1.'); 
+         
+        % Re-entering the value 
+        probabilities(i) = input(prompt2); 
+    end 
+end 
+ 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+ 
+disp('Valid input received.'); 
+disp('Probabilities:'); 
+disp(probabilities); 
+ 
+SortedProbabilities = sort (probabilities,'descend'); 
+HuffmanTable = cell(1, NumSymbols - 1); 
+SortedNewVector = SortedProbabilities; 
+ 
+%%%%%%%%%%%%%%%%%%%%%%%%% Create Huffman Table %%%%%%%%%%%%%%%%%%%%% 
+HuffmanTable{1} = SortedProbabilities; 
+ 
+for i = 1:(NumSymbols - 1) 
+    if numel(SortedNewVector) > 2 
+        CombinedElement = SortedNewVector(end) + SortedNewVector(end - 1); 
+ 
+        NewVector = [SortedNewVector(1:end-2); CombinedElement]; 
+        SortedNewVector = sort(NewVector, 'descend'); 
+                 
+        disp(SortedNewVector); 
+         
+        % Store the sorted vector in HuffmanTable 
+        HuffmanTable{i+1} = SortedNewVector; 
+    else 
+        % Handle the case when the size is less than or equal to 2 
+       
+        break; 
+    end 
+end 
+ 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+ 
+%%%%%%%%%%%%%%%%%%%%%% Binary Code Assignment %%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+ 
+% Initialize BinaryCodes as a cell array 
+BinaryCodes = cell(1, NumSymbols - 1); 
+ 
+% Initialize with vectors of zeros 
+for i = 1:NumSymbols - 1 
+    BinaryCodes{i} = cell(NumSymbols - i+1, 1); 
+end 
+ 
+% Assign initial binary codes to the last vector 
+BinaryCodes{end} = {0, 1}; 
+ 
+% Propagate binary codes backward 
+for i = NumSymbols - 1:-1:2 
+    parentVector = HuffmanTable{i - 1}; 
+    currentVector = HuffmanTable{i}; 
+ 
+    % Check the last pair in the parent vector 
+    lastPairSum = parentVector(end) + parentVector(end - 1); 
+ 
+    % Find the index of the sum of the last pair in the current vector 
+    matchingIndex = find(currentVector == lastPairSum); 
+    matchingIndex = max(matchingIndex); % if there is two matched values in 
+parentvector 
+    % use the index of the second one  
+ 
+ 
+    % Retrieve the matching binary code 
+    matchingCode = BinaryCodes{i}{matchingIndex}; 
+ 
+    % Create binary codes for the two pairs in the parent vector 
+    binaryCode0 = [matchingCode, 0]; 
+    binaryCode1 = [matchingCode, 1]; 
+ 
+    % Assign the binary codes to the last two elements in the parent vector 
+    BinaryCodes{i - 1}{end - 1} = binaryCode0; 
+    BinaryCodes{i - 1}{end} = binaryCode1; 
+ 
+    % Propagate the binary codes to other values in the parent vector other 
+    % than the combined pairs  
+    % setdiff return the indecies of all current vector except for matchingIndex 
+    otherValuesIndex = setdiff(1:numel(currentVector), matchingIndex); 
+ 
+    % Extract the values and binary codes for the other values in the current 
+vector 
+    otherValues = currentVector(otherValuesIndex); 
+    otherBinaryCodes = BinaryCodes{i}(otherValuesIndex); 
+     
+    % Find the corresponding indices in the parent vector 
+    %Here we compare each element from otherValues vector only once with 
+    %parentVector and get the indecies 
+    parentIndices = zeros(size(otherValues)); 
+    for k = 1:numel(otherValues) 
+        for l = 1:numel(parentVector) 
+            if otherValues(k) == parentVector(l) 
+                parentIndices(k) = l; 
+                parentVector(l) = NaN;  % Mark the used element in parentVector 
+                break;  % Exit the inner loop once a match is found 
+            end 
+        end 
+    end 
+ 
+ 
+    % Assign binary codes to the corresponding values in parentVector 
+    BinaryCodes{i - 1}(parentIndices) = otherBinaryCodes; 
+end 
+ 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+ 
+ 
+% Display the steps of code assingment of Huffman table  
+disp('Huffman Table Code Assignment Steps:'); 
+for i = (NumSymbols - 1):-1:1 
+    fprintf('\n'); 
+    fprintf('Step %d:\n', NumSymbols-i); 
+    for j = 1:length(HuffmanTable{i}) 
+        fprintf('\t%f --> %s\n', HuffmanTable{i}(j), num2str(BinaryCodes{i}{j})); 
+    end 
+end 
+ 
+fprintf('\n---------------------------------------------------------- \n') 
+ 
+% Display Symbols and the corresponding assigned Binary Code 
+disp('Huffman Table:'); 
+fprintf('\n%-10s %-20s %-20s\n', 'Symbol', 'Probability', 'BinaryCode'); 
+for j = 1:length(HuffmanTable{1}) 
+    fprintf('%-10d %-20f %-20s\n', j, HuffmanTable{1}(j), 
+num2str(BinaryCodes{1}{j})); 
+end
