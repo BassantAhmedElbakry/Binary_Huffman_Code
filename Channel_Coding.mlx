@@ -1,0 +1,1308 @@
+clc 
+clear all 
+%%%%%%%%%%%%%%%%%%%%%%%%%%% BPSK %%%%%%%%%%%%%%%%%%%%%%%%%%% 
+Number_Of_Bits=110000; 
+ 
+% Generating random binary stream % 
+generated_bits = randi([0 1],1,Number_Of_Bits); 
+transmitted_signal_BPSK=zeros(1,Number_Of_Bits); 
+ 
+A = 1 ; 
+% Mapping to symbols% 
+% Mapping the 1's to 1 and 0's to -1% 
+ for c=1:1:Number_Of_Bits 
+    if (generated_bits(c)==0)  
+        transmitted_signal_BPSK(c)= -1 * A; 
+    else 
+        transmitted_signal_BPSK(c)= 1 * A; 
+    end 
+ end 
+  
+% SNR Range % 
+SNR_dB = -3:1:10; % SNR Array in dB% 
+Range=14; 
+ 
+SNR=10.^(SNR_dB ./10); % SNR To Linear scale% 
+% Total Number of Symbols % 
+M_BPSK=2; 
+ 
+% Calculating Average energy per symbol% 
+Average_Symbol_Energy_BPSK=sum(abs(transmitted_signal_BPSK).^2)/(Number_Of_Bits);  
+% Calculating Eb% 
+Eb_BPSK=Average_Symbol_Energy_BPSK/log2(M_BPSK); 
+ 
+% Generating Noise% 
+random_noise=randn(1,Number_Of_Bits); 
+segma = sqrt( (Eb_BPSK/2) ./ 10.^(SNR_dB ./ 10)); 
+segma2 = Eb_BPSK ./ 10.^(SNR_dB ./10); 
+%%%%%%%%%%%%%%%%%%%%%%%%%%% BPSK Receiver %%%%%%%%%%%%%%%%%%%%%%%%%%% 
+ 
+decided_bits_BPSK = zeros(1,Number_Of_Bits); 
+ 
+for counter=1:1:Range 
+    noise_vector_BPSK=segma(counter) .* random_noise; % Computed Noise % 
+     
+    % Adding the noise to the transmitted signal% 
+    received_signal_BPSK = transmitted_signal_BPSK + noise_vector_BPSK; 
+     
+    % Receiver decisions % 
+    % Since symbols are equiprobable % 
+    % Thershold is 0 % 
+    for i=1:1:Number_Of_Bits 
+        if(received_signal_BPSK(1,i) > 0) 
+            decided_bits_BPSK(1,i)= 1; 
+        else 
+            decided_bits_BPSK(1,i)= -1; 
+        end 
+    end 
+     
+    % To Compute the error between the transmitted and received signals% 
+    errors = 0; 
+    for i=1:1:Number_Of_Bits 
+        if (transmitted_signal_BPSK(1,i) <= 0 && decided_bits_BPSK(1,i)>0)  
+            errors=errors+1; 
+        end 
+        if (transmitted_signal_BPSK(1,i) >= 0 && decided_bits_BPSK(1,i)<0)  
+            errors=errors+1; 
+        end 
+    end 
+% Calculating Theoritical BER% 
+Theoritical_BER_BPSK = 0.5 *erfc(sqrt(Eb_BPSK ./segma2));  
+% Calculating Actual BER% 
+Actual_BER_BPSK(1,counter)=errors/Number_Of_Bits; 
+end 
+ 
+% PLOTTING % 
+figure; 
+semilogy(SNR_dB,Actual_BER_BPSK,'--r*','linewidth',1.5,'markersize',10); 
+hold on 
+semilogy(SNR_dB,Theoritical_BER_BPSK,'--bs','linewidth',1.5,'markersize',6); 
+xlabel ('Eb/No (dB)'); 
+ylabel('BER'); 
+title('BER verses Eb/No for BPSK modulation scheme(No coding)'); 
+legend('Actual BER BPSK','Theoritical BER BPSK'); 
+grid on 
+hold off 
+
+Number_Of_Bits=110000; 
+ 
+% Generating random binary stream % 
+generated_bits = randi([0 1],1,Number_Of_Bits); 
+transmitted_signal_BPSK=zeros(1,Number_Of_Bits); 
+ 
+A = 1 ; 
+% Mapping to symbols% 
+% Mapping the 1's to 1 and 0's to -1% 
+for c=1:1:Number_Of_Bits 
+    if (generated_bits(c)==0) 
+        transmitted_signal_BPSK(c)= -1 * A; 
+    else 
+        transmitted_signal_BPSK(c)= 1 * A; 
+    end 
+end 
+% Channel Coding % 
+% Repeat with 3 % 
+transmitted_signal_BPSK_channel_coded = repelem(transmitted_signal_BPSK , 3); 
+length_of_transmitted_signal = length(transmitted_signal_BPSK_channel_coded); 
+% SNR Range % 
+SNR_dB = -3:1:10; % SNR Array in dB% 
+Range=14; 
+SNR=10.^(SNR_dB ./10); % SNR To Linear scale% 
+% Total Number of Symbols % 
+M_BPSK=2; 
+% Calculating Average energy per symbol% 
+Average_Symbol_Energy_BPSK=sum(abs(transmitted_signal_BPSK).^2)/(Number_Of_Bits); 
+% Calculating Eb% 
+Eb_BPSK=Average_Symbol_Energy_BPSK/log2(M_BPSK); 
+% Generating Noise% 
+random_noise=randn(1,length_of_transmitted_signal); 
+segma = sqrt( (Eb_BPSK/2) ./ 10.^(SNR_dB ./ 10)); 
+segma2 = Eb_BPSK ./ 10.^(SNR_dB ./10); 
+%%%%%%%%%%%%%%%%%%%%%%%%%%% BPSK Receiver %%%%%%%%%%%%%%%%%%%%%%%%%%% 
+decided_bits_BPSK = zeros(1,Number_Of_Bits); 
+decided_rep_bits_BPSK = zeros(1,length_of_transmitted_signal); 
+for counter=1:1:Range 
+    noise_vector_BPSK=segma(counter) .* random_noise; % Computed Noise % 
+    % Adding the noise to the transmitted signal% 
+    received_signal_BPSK = transmitted_signal_BPSK_channel_coded + 
+noise_vector_BPSK; 
+    %     Receiver decisions % 
+    %     Since symbols are equiprobable and hard decision decoding is used % 
+    %     Thershold is 0 % 
+    for i=1:1:length_of_transmitted_signal 
+        if(received_signal_BPSK(1,i) >= 0) 
+            decided_rep_bits_BPSK(1,i) = A; 
+        else 
+            decided_rep_bits_BPSK(1,i) = -A; 
+        end 
+    end 
+    j = 1 ; 
+    for k=1:3:length_of_transmitted_signal 
+        if((decided_rep_bits_BPSK(1,k) == A) && (decided_rep_bits_BPSK(1,k+1) == 
+A) && (decided_rep_bits_BPSK(1,k+2) == A)) 
+            decided_bits_BPSK(1,j)= 1; 
+        elseif((decided_rep_bits_BPSK(1,k) == -A) && 
+(decided_rep_bits_BPSK(1,k+1) == -A) && (decided_rep_bits_BPSK(1,k+2) == -A)) 
+            decided_bits_BPSK(1,j)= 0; 
+        elseif(((decided_rep_bits_BPSK(1,k) == A) && 
+(decided_rep_bits_BPSK(1,k+1) == A) && (decided_rep_bits_BPSK(1,k+2) == -A))) 
+            decided_bits_BPSK(1,j)= 1; 
+        elseif(((decided_rep_bits_BPSK(1,k) == A) && 
+(decided_rep_bits_BPSK(1,k+1) == -A) && (decided_rep_bits_BPSK(1,k+2) == A))) 
+            decided_bits_BPSK(1,j)= 1; 
+        elseif(((decided_rep_bits_BPSK(1,k) == -A) && 
+(decided_rep_bits_BPSK(1,k+1) == A) && (decided_rep_bits_BPSK(1,k+2) == A))) 
+            decided_bits_BPSK(1,j)= 1; 
+        elseif((decided_rep_bits_BPSK(1,k) == -A) && 
+(decided_rep_bits_BPSK(1,k+1) == -A) && (decided_rep_bits_BPSK(1,k+2) == A)) 
+            decided_bits_BPSK(1,j)= 0; 
+        elseif((decided_rep_bits_BPSK(1,k) == -A) && 
+(decided_rep_bits_BPSK(1,k+1) == A) && (decided_rep_bits_BPSK(1,k+2) == -A)) 
+            decided_bits_BPSK(1,j)= 0; 
+        elseif((decided_rep_bits_BPSK(1,k) == A) && (decided_rep_bits_BPSK(1,k+1) == -A) && (decided_rep_bits_BPSK(1,k+2) == -A)) 
+            decided_bits_BPSK(1,j)= 0; 
+        end 
+        j = j + 1; 
+    end 
+    % To Compute the error between the transmitted and received signals% 
+    errors = 0; 
+    for i=1:1:Number_Of_Bits 
+        if (generated_bits(1,i) ~= decided_bits_BPSK(1,i)) 
+            errors=errors+1; 
+            errors_vect(1,i)=errors; 
+        end 
+    end 
+    % Calculating Theoritical BER% 
+    % Calculating Actual BER% 
+    Actual_BER_BPSK_case_a(1,counter)=errors/Number_Of_Bits; 
+end 
+Theoritical_BER_BPSK = 0.5 *erfc(sqrt(Eb_BPSK ./segma2)); 
+% PLOTTING % 
+figure; 
+semilogy(SNR_dB,Actual_BER_BPSK_case_a,'--g*','linewidth',1.5,'markersize',10); 
+hold on 
+semilogy(SNR_dB,Theoritical_BER_BPSK,'--bs','linewidth',1.5,'markersize',6); 
+xlabel ('Eb/No'); 
+ylabel('BER'); 
+title('BER verses Eb/No for BPSK ,Hard decision decoding same energy per 
+transmitted bit'); 
+legend('Actual BER BPSK','Theoritical BER BPSK'); 
+grid on 
+hold off 
+
+Number_Of_Bits=110000; 
+% Generating random binary stream % 
+generated_bits = randi([0 1],1,Number_Of_Bits); 
+transmitted_signal_BPSK=zeros(1,Number_Of_Bits); 
+A = 1 ; 
+% Mapping to symbols% 
+% Mapping the 1's to 1 and 0's to -1% 
+for c=1:1:Number_Of_Bits 
+    if (generated_bits(c)==0) 
+        transmitted_signal_BPSK(c)= -1 * A; 
+    else 
+        transmitted_signal_BPSK(c)= 1 * A; 
+    end 
+end 
+ 
+% Channel Coding % 
+% Repeat with 3 % 
+transmitted_signal_BPSK_channel_coded = 
+(A/sqrt(3))*repelem(transmitted_signal_BPSK , 3); 
+length_of_transmitted_signal = length(transmitted_signal_BPSK_channel_coded); 
+% SNR Range % 
+SNR_dB = -3:1:10; % SNR Array in dB% 
+Range=14; 
+ 
+SNR=10.^(SNR_dB ./10); % SNR To Linear scale% 
+% Total Number of Symbols % 
+M_BPSK=2; 
+ 
+% Calculating Average energy per symbol% 
+Average_Symbol_Energy_BPSK=sum(abs(transmitted_signal_BPSK).^2)/(Number_Of_Bits); 
+% Calculating Eb% 
+Eb_BPSK=Average_Symbol_Energy_BPSK/log2(M_BPSK); 
+ 
+% Generating Noise% 
+random_noise=randn(1,length_of_transmitted_signal); 
+segma = sqrt( (Eb_BPSK/2) ./ 10.^(SNR_dB ./ 10)); 
+segma2 = Eb_BPSK ./ 10.^(SNR_dB ./10); 
+%%%%%%%%%%%%%%%%%%%%%%%%%%% BPSK Receiver %%%%%%%%%%%%%%%%%%%%%%%%%%% 
+ 
+decided_bits_BPSK = zeros(1,Number_Of_Bits); 
+decided_rep_bits_BPSK = zeros(1,length_of_transmitted_signal); 
+for counter=1:1:Range 
+    noise_vector_BPSK=segma(counter) .* random_noise; % Computed Noise % 
+    % Adding the noise to the transmitted signal% 
+    received_signal_BPSK = transmitted_signal_BPSK_channel_coded + 
+noise_vector_BPSK; 
+    %     Receiver decisions % 
+    %     Since symbols are equiprobable and hard decision decoding is used % 
+    %     Thershold is 0 % 
+    for i=1:1:length_of_transmitted_signal 
+        if(received_signal_BPSK(1,i) >= 0) 
+            decided_rep_bits_BPSK(1,i) = A; 
+        else 
+            decided_rep_bits_BPSK(1,i) = -A; 
+        end 
+    end 
+    j = 1 ; 
+    for k=1:3:length_of_transmitted_signal 
+        if((decided_rep_bits_BPSK(1,k) == A) && (decided_rep_bits_BPSK(1,k+1) == 
+A) && (decided_rep_bits_BPSK(1,k+2) == A)) 
+            decided_bits_BPSK(1,j)= 1; 
+        elseif((decided_rep_bits_BPSK(1,k) == -A) && 
+(decided_rep_bits_BPSK(1,k+1) == -A) && (decided_rep_bits_BPSK(1,k+2) == -A)) 
+            decided_bits_BPSK(1,j)= 0; 
+        elseif(((decided_rep_bits_BPSK(1,k) == A) && 
+(decided_rep_bits_BPSK(1,k+1) == A) && (decided_rep_bits_BPSK(1,k+2) == -A))) 
+            decided_bits_BPSK(1,j)= 1; 
+        elseif(((decided_rep_bits_BPSK(1,k) == A) && 
+(decided_rep_bits_BPSK(1,k+1) == -A) && (decided_rep_bits_BPSK(1,k+2) == A))) 
+            decided_bits_BPSK(1,j)= 1; 
+        elseif(((decided_rep_bits_BPSK(1,k) == -A) && 
+(decided_rep_bits_BPSK(1,k+1) == A) && (decided_rep_bits_BPSK(1,k+2) == A))) 
+            decided_bits_BPSK(1,j)= 1; 
+        elseif((decided_rep_bits_BPSK(1,k) == -A) && 
+(decided_rep_bits_BPSK(1,k+1) == -A) && (decided_rep_bits_BPSK(1,k+2) == A)) 
+            decided_bits_BPSK(1,j)= 0; 
+        elseif((decided_rep_bits_BPSK(1,k) == -A) && 
+(decided_rep_bits_BPSK(1,k+1) == A) && (decided_rep_bits_BPSK(1,k+2) == -A)) 
+            decided_bits_BPSK(1,j)= 0; 
+        elseif((decided_rep_bits_BPSK(1,k) == A) && (decided_rep_bits_BPSK(1,k+1) 
+== -A) && (decided_rep_bits_BPSK(1,k+2) == -A)) 
+            decided_bits_BPSK(1,j)= 0; 
+        end 
+        j = j + 1; 
+    end 
+    % To Compute the error between the transmitted and received signals% 
+    errors = 0; 
+    for i=1:1:Number_Of_Bits 
+        if (generated_bits(1,i) ~= decided_bits_BPSK(1,i)) 
+            errors=errors+1; 
+            errors_vect(1,i)=errors; 
+        end 
+    end 
+    % Calculating Theoritical BER% 
+    % Calculating Actual BER% 
+    Actual_BER_BPSK_case_b(1,counter)=errors/Number_Of_Bits; 
+end 
+Theoritical_BER_BPSK = 0.5 *erfc(sqrt(Eb_BPSK ./segma2)); 
+% PLOTTING % 
+figure; 
+semilogy(SNR_dB,Actual_BER_BPSK_case_b,'--r*','linewidth',1.5,'markersize',10); 
+hold on 
+semilogy(SNR_dB,Theoritical_BER_BPSK,'--bs','linewidth',1.5,'markersize',6); 
+xlabel ('Eb/No(dB)'); 
+ylabel('BER'); 
+title('BER verses Eb/No for BPSK , Hard decision decoding same energy per info 
+bit'); 
+legend('Actual BER BPSK','Theoritical BER BPSK'); 
+grid on 
+hold off 
+
+% Clear command window and workspace 
+clc 
+clear all 
+ 
+%%%%%%%%%%%%%%%%%%%%%%%%%%% BPSK with Repetition 3 Coding 
+%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+% Define the number of bits to be transmitted 
+Number_Of_Bits = 110000; 
+ 
+% Generate a random binary stream of bits 
+generated_bits = randi([0 1], 1, Number_Of_Bits); 
+transmitted_signal_BPSK = zeros(1, Number_Of_Bits); 
+ 
+% Set the amplitude for BPSK modulation 
+A = 1; 
+ 
+% Map each bit to BPSK symbols (A or -A) 
+for c = 1:1:Number_Of_Bits 
+    if (generated_bits(c) == 0) 
+        transmitted_signal_BPSK(c) = -1 * A; 
+    else 
+        transmitted_signal_BPSK(c) = 1 * A; 
+    end 
+end 
+ 
+% Channel Coding - Repeat each symbol with a repetition factor of 3 
+transmitted_signal_BPSK_channel_coded = repelem(transmitted_signal_BPSK, 3); 
+transmitted_signal_BPSK_channel_coded_info = (A / sqrt(3)) * 
+repelem(transmitted_signal_BPSK, 3); 
+length_of_transmitted_signal = length(transmitted_signal_BPSK_channel_coded); 
+ 
+% Define the SNR range in dB 
+SNR_dB = -3:1:10; 
+Range = 14; 
+ 
+% Convert SNR to linear scale 
+SNR = 10.^(SNR_dB ./ 10); 
+ 
+% Set the total number of symbols for BPSK modulation 
+M_BPSK = 2; 
+ 
+% Calculate the energy per bit (Eb) for BPSK 
+Eb_BPSK = A^2; 
+ 
+% Generate AWGN noise for the channel 
+N0 = Eb_BPSK ./ 10.^(SNR_dB ./ 10); 
+random_noise = randn(1, length_of_transmitted_signal); 
+ 
+% Initialize arrays to store decided bits for both scenarios 
+decided_bits_BPSK = zeros(1, Number_Of_Bits); 
+decided_bits_BPSK_info = zeros(1, Number_Of_Bits); 
+ 
+% Iterate over the SNR range 
+for counter = 1:1:Range 
+    % Generate AWGN noise for the channel with computed noise power 
+    noise_vector_BPSK = sqrt(N0(counter) / 2) .* random_noise; 
+ 
+    % Add the noise to the transmitted signal 
+    received_signal_BPSK = transmitted_signal_BPSK_channel_coded + 
+noise_vector_BPSK; 
+    received_signal_BPSK_info = transmitted_signal_BPSK_channel_coded_info + 
+noise_vector_BPSK; 
+ 
+    % Perform soft decision decoding 
+    j = 1; 
+    for i = 1:3:length_of_transmitted_signal-2 
+        % Compare the sum of 3 consecutive received bits to 0 for soft decoding 
+        if (sum(received_signal_BPSK(i:i+2)) >= 0) 
+            decided_bits_BPSK(1, j) = 1; 
+        else 
+            decided_bits_BPSK(1, j) = 0; 
+        end 
+ 
+        if (sum(received_signal_BPSK_info(i:i+2)) >= 0) 
+            decided_bits_BPSK_info(1, j) = 1; 
+        else 
+            decided_bits_BPSK_info(1, j) = 0; 
+        end 
+        j = j + 1; 
+    end 
+ 
+    % Count errors for both scenarios (energy per transmitted bit and energy per 
+info bit) 
+    errors = sum(generated_bits ~= decided_bits_BPSK); 
+    errors_info = sum(generated_bits ~= decided_bits_BPSK_info); 
+ 
+    % Calculate Actual BER 
+    Actual_BER_BPSK(1, counter) = errors / Number_Of_Bits; 
+    Actual_BER_BPSK_info(1, counter) = errors_info / Number_Of_Bits; 
+end 
+ 
+% Calculate Theoretical BER 
+Theoretical_BER_BPSK = 0.5 * erfc(sqrt(Eb_BPSK ./ N0)); 
+ 
+% Plotting 
+figure; 
+h1 = semilogy(SNR_dB, Theoretical_BER_BPSK, '--mo', 'LineWidth', 1.5, 
+'MarkerSize', 8); 
+hold on 
+h2 = semilogy(SNR_dB, Actual_BER_BPSK, '-bs', 'LineWidth', 1.5, 'MarkerSize', 8); 
+hold on 
+h3 = semilogy(SNR_dB, Actual_BER_BPSK_info, '-.r*', 'LineWidth', 1.5, 
+'MarkerSize', 8); 
+ 
+xlabel('Eb/No (dB)'); 
+ylabel('Bit Error Rate (BER)'); 
+title('Bit Error Rate vs. Eb/No for BPSK with Repetition 3 Coding and Soft 
+Decision Decoding'); 
+legend([h1, h2, h3], 'Theoretical BER (No Coding)', 'Actual BER (Energy per 
+Transmitted Bit)', 'Actual BER (Energy per Information Bit)'); 
+grid on 
+hold off 
+
+% Clear command window and workspace 
+clc 
+clear all 
+ 
+%%%%%%%%%%%%%%%%%%%%%%%%%%% BPSK with (7,4) Hamming Code 
+%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+% Define the number of bits to be transmitted 
+Number_Of_Bits = 110000; 
+ 
+% Generate a random binary stream of bits 
+generated_bits = randi([0 1], 1, Number_Of_Bits); 
+transmitted_signal_BPSK = zeros(1, Number_Of_Bits); 
+ 
+% Define Hamming code parameters 
+n = 7; % Codeword length 
+k = 4; % Message length 
+ 
+% Encode the generated bits using Hamming code 
+EncodedBits = encode(generated_bits, n, k, 'hamming/binary'); 
+ 
+% Set the amplitude for BPSK modulation 
+A = 1; 
+ 
+% Map each encoded bit to BPSK symbols (A or -A) 
+Hamming_Number_Of_Bits = Number_Of_Bits * (7 / 4); 
+for c = 1:1:Hamming_Number_Of_Bits 
+    if (EncodedBits(c) == 0) 
+        transmitted_signal_Hamming_BPSK(c) = -1 * A; 
+    else 
+        transmitted_signal_Hamming_BPSK(c) = 1 * A; 
+    end 
+end 
+ 
+% Adjust signal for information bit energy calculation 
+transmitted_signal_Hamming_BPSK_info = (A / sqrt(3)) * 
+transmitted_signal_Hamming_BPSK; 
+ 
+length_of_transmitted_signal = length(transmitted_signal_Hamming_BPSK); 
+ 
+% SNR Range 
+SNR_dB = -3:1:10; % SNR Array in dB 
+Range = 14; 
+ 
+SNR = 10.^(SNR_dB ./ 10); % SNR To Linear scale 
+ 
+% Total Number of Symbols for BPSK modulation 
+M_BPSK = 2; 
+ 
+% Calculate energy per bit (Eb) for BPSK 
+Eb_BPSK = A^2; 
+ 
+% Generate AWGN noise for the channel 
+N0 = Eb_BPSK ./ 10.^(SNR_dB ./ 10); 
+random_noise = randn(1, length_of_transmitted_signal); 
+ 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+% Loop over the SNR range 
+for counter = 1:1:Range 
+    % Generate AWGN noise for the channel with computed noise power 
+    noise_vector_BPSK = sqrt(N0(counter) / 2) .* random_noise; 
+ 
+    % Add the noise to the transmitted signal 
+    received_signal_BPSK = transmitted_signal_Hamming_BPSK + noise_vector_BPSK; 
+    received_signal_BPSK_info = transmitted_signal_Hamming_BPSK_info + 
+noise_vector_BPSK; 
+ 
+    % Perform demapping based on received signal  
+    Demapping = received_signal_BPSK > 0; 
+    Demapping_info = received_signal_BPSK_info > 0; 
+ 
+    % Decode using Hamming code 
+    DecodedBits = decode(Demapping, n, k, 'hamming/binary'); 
+    DecodedBits_info = decode(Demapping_info, n, k, 'hamming/binary'); 
+ 
+    % Count errors for both scenarios (energy per transmitted bit and energy per 
+info bit) 
+    errors = sum(generated_bits ~= DecodedBits); 
+    errors_info = sum(generated_bits ~= DecodedBits_info); 
+ 
+    % Calculate Actual BER 
+    Actual_BER_BPSK_Hamming(1, counter) = errors / Number_Of_Bits; 
+    Actual_BER_BPSK_Hamming_info(1, counter) = errors_info / Number_Of_Bits; 
+end 
+ 
+% Calculate Theoretical BER 
+Theoretical_BER_BPSK = 0.5 * erfc(sqrt(Eb_BPSK ./ N0)); 
+ 
+% Plotting 
+figure; 
+h1 = semilogy(SNR_dB, Theoretical_BER_BPSK, '--mo', 'LineWidth', 1.5, 
+'MarkerSize', 8); 
+hold on 
+h2 = semilogy(SNR_dB, Actual_BER_BPSK_Hamming, '-bs', 'LineWidth', 1.5, 
+'MarkerSize', 8); 
+hold on 
+h3 = semilogy(SNR_dB, Actual_BER_BPSK_Hamming_info, '-.g*', 'LineWidth', 1.5, 
+'MarkerSize', 8); 
+ 
+xlabel('Eb/No (dB)'); 
+ylabel('Bit Error Rate (BER)'); 
+title('Bit Error Rate vs. Eb/No for BPSK with (7,4) Hamming Code'); 
+legend([h1, h2, h3], 'Theoretical BER (No Coding)', 'Actual BER (Energy per 
+Transmitted Bit)', 'Actual BER (Energy per Information Bit)'); 
+grid on 
+hold off 
+
+clc  
+clear 
+ 
+%%%%%%%%%%%%%%%%%%%%%%%%%%% BPSK with (15,11) Hamming Code 
+%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+% Define the number of bits to be transmitted 
+Number_Of_Bits = 110000; 
+ 
+% Define Hamming code parameters 
+n = 15; % Codeword length 
+k = 11; % Message length 
+ 
+% Set the amplitude for BPSK modulation 
+A = 1; 
+ 
+% Calculate energy per bit (Eb) for BPSK 
+Eb_BPSK = A^2; 
+ 
+% SNR Range 
+SNR_dB = -3:1:10; % SNR Array in dB 
+Range = 14; 
+ 
+SNR = 10.^(SNR_dB ./ 10); % SNR To Linear scale 
+ 
+Sigma = sqrt((Eb_BPSK/2)./10.^(SNR_dB/10)); 
+ 
+% Total Number of Symbols for BPSK modulation 
+M_BPSK = 2; 
+ 
+% Generate a random binary stream of bits 
+generated_bits = randi([0 1], 1, Number_Of_Bits); 
+transmitted_signal_BPSK = zeros(1, Number_Of_Bits); 
+ 
+% Mapping 
+for c = 1:1:Number_Of_Bits 
+    if (generated_bits(c) == 0) 
+        BPSK_mapped(c) = -1 * A; 
+    else 
+        BPSK_mapped(c) = 1 * A; 
+    end 
+end 
+ 
+% Repeated generated bits 
+Rep_generated_bits = zeros(1, 3*Number_Of_Bits); 
+ 
+% Encode 
+Encode_generated_bits = encode(generated_bits, n, k, 'hamming'); 
+ 
+% Decode 
+Decode_generated_bits = length(decode(Encode_generated_bits, n, k, 'hamming')); 
+ 
+% Map each encoded bit to BPSK symbols (A or -A) 
+Hamming_Number_Of_Bits = Number_Of_Bits * (n / k); 
+for c = 1:1:Hamming_Number_Of_Bits 
+    if (Encode_generated_bits(c) == 0) 
+        transmitted_signal_Hamming_BPSK(c) = -1 * A; 
+    else 
+        transmitted_signal_Hamming_BPSK(c) = 1 * A; 
+    end 
+end 
+ 
+% Adjust signal for information bit energy calculation 
+transmitted_signal_Hamming_BPSK_info = sqrt(A/(n/k)) * 
+transmitted_signal_Hamming_BPSK; 
+ 
+length_of_transmitted_signal = length(transmitted_signal_Hamming_BPSK); 
+ 
+% Generate AWGN noise for the channel 
+N0 = Eb_BPSK ./ 10.^(SNR_dB ./ 10); 
+random_noise = randn(1, Number_Of_Bits); 
+Rep_random_noise = randn(1, 3*Number_Of_Bits); 
+noise_Real_hamming_2 = randn(1,length(Encode_generated_bits)); 
+ 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+% Loop over the SNR range 
+for i = 1 : Range 
+    noise_Real=random_noise*Sigma(i); 
+    Rep_noise_Real=Rep_random_noise*Sigma(i); 
+    noise_Real_hamming = noise_Real_hamming_2*Sigma(i); 
+    BPSK_noise(i,:)=BPSK_mapped+noise_Real; 
+    BPSK_with_noise_trans(i,:) = transmitted_signal_Hamming_BPSK + 
+noise_Real_hamming; 
+    BPSK_with_noise_info(i,:)  = transmitted_signal_Hamming_BPSK_info  + 
+noise_Real_hamming; 
+end 
+ 
+Error_count_Trans=0; 
+Error_count_Info=0; 
+Error_count=0; 
+ 
+for j = 1 : Range 
+    % BPSK 
+    for k = 1 : 1 : Number_Of_Bits 
+        if real(BPSK_noise(j,k))>0 
+            BPSK_demapped(j,k)=1; 
+        end 
+    end 
+     
+     
+    for i=1:length(Encode_generated_bits) 
+        if (BPSK_with_noise_trans(j,i) > 0) 
+            BPSK_Demapped_trans(j,i) = 1; 
+        end 
+         
+        if (BPSK_with_noise_info(j,i) > 0) 
+            BPSK_Demapped_info(j,i) = 1; 
+        end 
+    end 
+     
+    BPSK_Decoded_trans(j,:) = decode(BPSK_Demapped_trans(j,:), 15, 11, 
+'hamming'); 
+    BPSK_Decoded_info(j,:) = decode(BPSK_Demapped_info(j,:), 15, 11, 'hamming'); 
+end 
+ 
+for j = 1:Range 
+for i = 1:Number_Of_Bits 
+        if(BPSK_demapped(j,i)~=generated_bits(i)) 
+            Error_count=Error_count+1; 
+        end 
+         
+        if(BPSK_Decoded_trans(j,i)~=generated_bits(i)) 
+            Error_count_Trans=Error_count_Trans+1; 
+        end 
+         
+        if(BPSK_Decoded_info(j,i)~=generated_bits(i)) 
+            Error_count_Info=Error_count_Info+1; 
+        end 
+end 
+ 
+Theoretical_BER_BPSK(j)=Error_count/Number_Of_Bits; 
+Actual_BER_Trans(j)=Error_count_Trans/Number_Of_Bits; 
+Actual_BER_Info(j)=Error_count_Info/Number_Of_Bits; 
+ 
+Error_count=0; 
+Error_count_Trans=0; 
+Error_count_Info=0; 
+end 
+ 
+% Calculate Theoretical BER 
+%Theoretical_BER_BPSK = 0.5 * erfc(sqrt(Eb_BPSK ./ N0)); 
+ 
+% Plotting 
+figure; 
+h1 = semilogy(SNR_dB, Theoretical_BER_BPSK, '--bo', 'LineWidth', 1.5, 
+'MarkerSize', 8); 
+hold on 
+h2 = semilogy(SNR_dB, Actual_BER_Trans, '-rs', 'LineWidth', 1.5, 'MarkerSize', 
+8); 
+hold on 
+h3 = semilogy(SNR_dB, Actual_BER_Info, '-.g*', 'LineWidth', 1.5, 'MarkerSize', 
+8); 
+ 
+xlabel('Eb/No (dB)'); 
+ylabel('Bit Error Rate (BER)'); 
+title('Bit Error Rate vs. Eb/No for BPSK with (15,11) Hamming Code'); 
+legend([h1, h2, h3], 'Theoretical BER (No Coding)', 'Actual BER (Energy per 
+Transmitted Bit)', 'Actual BER (Energy per Information Bit)'); 
+grid on 
+hold off 
+
+
+% Clear command window and workspace 
+clc 
+clear all 
+ 
+%%%%%%%%%%%%%%%%%%%%%%%%%%% BPSK with (31,26) Hamming Code 
+%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+% Define the number of bits to be transmitted 
+Number_Of_Bits = 110006; 
+ 
+% Generate a random binary stream of bits 
+generated_bits = randi([0 1], 1, Number_Of_Bits); 
+transmitted_signal_BPSK = zeros(1, Number_Of_Bits); 
+ 
+% Define Hamming code parameters 
+n = 31; % Codeword length 
+k = 26; % Message length 
+ 
+% Encode the generated bits using Hamming code 
+EncodedBits = encode(generated_bits, n, k, 'hamming/binary'); 
+ 
+% Set the amplitude for BPSK modulation 
+A = 1; 
+ 
+% Map each encoded bit to BPSK symbols (A or -A) 
+Hamming_Number_Of_Bits = Number_Of_Bits * (n / k); 
+for c = 1:1:Hamming_Number_Of_Bits 
+    if (EncodedBits(c) == 0) 
+        transmitted_signal_Hamming_BPSK(c) = -1 * A; 
+    else 
+        transmitted_signal_Hamming_BPSK(c) = 1 * A; 
+    end 
+end 
+ 
+% Adjust signal for information bit energy calculation 
+transmitted_signal_Hamming_BPSK_info = (A / sqrt(3)) * 
+transmitted_signal_Hamming_BPSK; 
+ 
+length_of_transmitted_signal = length(transmitted_signal_Hamming_BPSK); 
+ 
+% SNR Range 
+SNR_dB = -3:1:10; % SNR Array in dB 
+Range = 14; 
+ 
+SNR = 10.^(SNR_dB ./ 10); % SNR To Linear scale 
+ 
+% Total Number of Symbols for BPSK modulation 
+M_BPSK = 2; 
+ 
+% Calculate energy per bit (Eb) for BPSK 
+Eb_BPSK = A^2; 
+ 
+% Generate AWGN noise for the channel 
+N0 = Eb_BPSK ./ 10.^(SNR_dB ./ 10); 
+random_noise = randn(1, length_of_transmitted_signal); 
+ 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+% Loop over the SNR range 
+for counter = 1:1:Range 
+    % Generate AWGN noise for the channel with computed noise power 
+    noise_vector_BPSK = sqrt(N0(counter) / 2) .* random_noise; 
+ 
+    % Add the noise to the transmitted signal 
+    received_signal_BPSK = transmitted_signal_Hamming_BPSK + noise_vector_BPSK; 
+    received_signal_BPSK_info = transmitted_signal_Hamming_BPSK_info + 
+noise_vector_BPSK; 
+ 
+    % Perform demapping based on received signal  
+    Demapping = received_signal_BPSK > 0; 
+    Demapping_info = received_signal_BPSK_info > 0; 
+ 
+    % Decode using Hamming code 
+    DecodedBits = decode(Demapping, n, k, 'hamming/binary'); 
+    DecodedBits_info = decode(Demapping_info, n, k, 'hamming/binary'); 
+ 
+    % Count errors for both scenarios (energy per transmitted bit and energy per 
+info bit) 
+    errors = sum(generated_bits ~= DecodedBits); 
+    errors_info = sum(generated_bits ~= DecodedBits_info); 
+ 
+    % Calculate Actual BER 
+    Actual_BER_BPSK_Hamming(1, counter) = errors / Number_Of_Bits; 
+    Actual_BER_BPSK_Hamming_info(1, counter) = errors_info / Number_Of_Bits; 
+end 
+ 
+% Calculate Theoretical BER 
+Theoretical_BER_BPSK = 0.5 * erfc(sqrt(Eb_BPSK ./ N0)); 
+ 
+% Plotting 
+figure; 
+h1 = semilogy(SNR_dB, Theoretical_BER_BPSK, '--mo', 'LineWidth', 1.5, 
+'MarkerSize', 8); 
+hold on 
+h2 = semilogy(SNR_dB, Actual_BER_BPSK_Hamming, '-bs', 'LineWidth', 1.5, 
+'MarkerSize', 8); 
+hold on 
+h3 = semilogy(SNR_dB, Actual_BER_BPSK_Hamming_info, '-.g*', 'LineWidth', 1.5, 
+'MarkerSize', 8); 
+ 
+xlabel('Eb/No (dB)'); 
+ylabel('Bit Error Rate (BER)'); 
+title('Bit Error Rate vs. Eb/No for BPSK with (31,26) Hamming Code'); 
+legend([h1, h2, h3], 'Theoretical BER (No Coding)', 'Actual BER (Energy per 
+Transmitted Bit)', 'Actual BER (Energy per Information Bit)'); 
+grid on 
+hold off 
+
+
+clear; 
+clc; 
+Eb=2.5; 
+ 
+%%%%%%%%%%%%%%%%%%%%%%  QPSK %%%%%%%%%%%%%%%%%%%%%%%% 
+%%%%%%%%%%%%%%%%%%%% no coding %%%%%%%%%%%%%%%%%%%%%%% 
+ 
+No_of_error_bits_QPSK_Binary = zeros(1,5); 
+No_of_bits=26200; 
+ 
+No_of_Sympols = No_of_bits / 2;%as we use QPSK 
+Es = 2*Eb; %energy of symbol = 2* energy of bit 
+ 
+% %SNR_dB = 5 :1: 15 ; %SNR range 
+% No_of_SNR_dB = 11; 
+% % Linear scale of SNR 
+% SNR = 10.^(SNR_dB ./10); 
+% % Calculating Noise Spectral Density 
+% N0 = Eb ./ SNR ; 
+ 
+%here we will use 26200 and will iterate for 1000 times 
+for i=1:1000 
+    Generated_data=randi([0 1] ,[1,No_of_bits]); 
+ 
+ 
+    %%%%%%%%%%%%%%%%%% constellation points for QPSK %%%%%%%%%%%%%%%%%%%%%%%%% 
+    %This line defines a vector named symbols_QPSK that contains four complex numbers 
+    % , each representing a unique symbol used in Quadrature Phase Shift Keying (QPSK) 
+modulation. 
+    S1 =  sqrt(Es/2) - 1i*sqrt(Es/2); %  1 - i 
+    S2 = -sqrt(Es/2) - 1i*sqrt(Es/2); % -1 - i 
+    S3 = -sqrt(Es/2) + 1i*sqrt(Es/2); % -1 + i 
+    S4 =  sqrt(Es/2) + 1i*sqrt(Es/2); %  1 + i 
+    symbols_QPSK =[S1 , S2 , S3 , S4]; 
+    %%%%%%%%%%%%%%% End of constellation points for QPSK %%%%%%%%%%%%%%%%%%%%%%%%% 
+ 
+ 
+    %%%%%%%%%%%%%%%% QPSK Modulation %%%%%%%%%%%%%%%%%%%%%% 
+    QPSK_Binary_Data = zeros(1,No_of_Sympols); 
+    Output_Signal_QPSK_Binary = QPSK_Binary_Data; 
+    QPSK_Counter = 1; 
+    for Q = 1 : 2 : No_of_bits 
+        % Mapping 11 to S1 at the fourth quadrent 
+        if Generated_data(Q) == 1 && Generated_data(Q+1) == 1 
+            QPSK_Binary_Data(QPSK_Counter) = S1; 
+ 
+            % Mapping 00 to S2 at the third quadrent 
+        elseif Generated_data(Q) == 0 && Generated_data(Q+1) == 0 
+            QPSK_Binary_Data(QPSK_Counter) = S2; 
+ 
+            % Mapping 01 to S3 at the second quadrent 
+        elseif Generated_data(Q) == 0 && Generated_data(Q+1) == 1 
+            QPSK_Binary_Data(QPSK_Counter) = S3; 
+ 
+            % Mapping 10 to S4 at the first quadrent 
+        else 
+            QPSK_Binary_Data(QPSK_Counter) = S4; 
+        end 
+        QPSK_Counter = QPSK_Counter + 1; 
+    end 
+    %%%%%%%%%%%%%%% End of QPSK Modulation %%%%%%%%%%%%%%%%%%%% 
+ 
+    %%%%%%%%%%%%%%%%%%%%%% Channel %%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+    %The code generates and adds noise to a QPSK-modulated signal at different 
+    % Signal-to-Noise Ratios (SNRs) to assess its impact on signal quality and 
+    % performance. 
+ 
+    for SNR_dB = [5 6 7 8 9] 
+        if (i>100 && SNR_dB~=9) 
+            continue; 
+        end 
+ 
+        %Calculates noise power spectral density (N0) based 
+        % on energy per bit (Eb) and SNR. 
+        N0 = Eb/(10^(SNR_dB/10)); 
+ 
+        variance = sqrt(N0/2); 
+ 
+        %Generates random noise with zero mean and variance 
+        % standard deviation for imaginary and real parts. 
+        noise_real = 1i.*randn(1,26200/2).*variance; 
+        noise_complex = randn(1,26200/2).*variance; 
+        QPSK_noise = noise_real + noise_complex; 
+ 
+        %Adds noise to the modulated signal. 
+        Output_Signal_QPSK_Binary_Noise = QPSK_Binary_Data+QPSK_noise; 
+ 
+        %%%%%%%%%%%%%%% End of channel %%%%%%%%%%%%%%%%%%%%%%%%%%% 
+ 
+        %%%%%%%%%%%%%%% QPSK Modulation %%%%%%%%%%%%%%%%%%%%%% 
+        %The code performs basic QPSK demodulation, converting a noisy 
+        %  QPSK signal back into its original binary representation. 
+        for m = 1 : No_of_Sympols 
+            %Extract Real and Imaginary Parts 
+            Real_OutSignal_QPSK = real(Output_Signal_QPSK_Binary_Noise(m)); 
+            Imag_OutSignal_QPSK = imag(Output_Signal_QPSK_Binary_Noise(m)); 
+ 
+            % demapping it to s1 in the forth quadrent 
+            if Real_OutSignal_QPSK > 0 &&  Imag_OutSignal_QPSK <= 0 
+                Output_Signal_QPSK_Binary(m*2 - 1) = 1; 
+                Output_Signal_QPSK_Binary(m*2)     = 1; 
+ 
+                % demapping it to s2 in the third quadrent 
+            elseif Real_OutSignal_QPSK <= 0 && Imag_OutSignal_QPSK <= 0 
+                Output_Signal_QPSK_Binary(m*2 - 1) = 0; 
+                Output_Signal_QPSK_Binary(m*2)     = 0; 
+ 
+                % demapping it to s3 in the second quadrent 
+            elseif Real_OutSignal_QPSK <= 0 && Imag_OutSignal_QPSK >= 0 
+                Output_Signal_QPSK_Binary(m*2 - 1) = 0; 
+                Output_Signal_QPSK_Binary(m*2)     = 1; 
+ 
+                % demapping it to s1 in the first quadrent 
+            else 
+                Output_Signal_QPSK_Binary(m*2 - 1) = 1; 
+                Output_Signal_QPSK_Binary(m*2)     = 0; 
+            end 
+        end 
+        %%%%%%%%%%%%%%% End of QPSK Modulation %%%%%%%%%%%%%%%%%%%%% 
+ 
+        %%%%%%%%%%%%%%% BER CALCULATION %%%%%%%%%%%%%%%%%%%%%%% 
+        % Accesses an element of the vector QPSK_errors at an index based on the current SNR 
+value 
+        %  minus 4. This vector likely stores error counts for different SNRs. 
+        No_of_error_bits_QPSK_Binary(SNR_dB-4)=No_of_error_bits_QPSK_Binary(SNR_dB
+4)+biterr(Generated_data,Output_Signal_QPSK_Binary); 
+    end 
+end 
+%normalizes error counts based on the total number 
+% of bits transmitted for most SNR values. 
+No_of_error_bits_QPSK_Binary(1:end-1)=No_of_error_bits_QPSK_Binary(1:end-1)/2620000; 
+No_of_error_bits_QPSK_Binary(end)=No_of_error_bits_QPSK_Binary(end)/26200000; 
+ 
+%%%%%%%%%%%%%%%%%%%%% Interpolation between 9 and 15 %%%%%%%%%%%%%%%%%%%%%%% 
+x_QPSK = [8 9]; 
+BER_8_9_QPSK = No_of_error_bits_QPSK_Binary(4:5); 
+linear_interpolation_QPSK=[10 11 12 13 14 15]; 
+ 
+%Takes the logarithm of BER_8_9_QPSK to linearize the BER curve. 
+%Interpolates linearly between log(BER) values at x_QPSK 
+% to estimate log(BER) at linear_interpolation_QPSK 
+%Extrapolates beyond the known range using linear assumptions. 
+%Takes the exponential to get estimated BER values at linear_interpolation_QPSK. 
+estimated_BER_QPSK = 
+exp(interp1(x_QPSK,log(BER_8_9_QPSK),linear_interpolation_QPSK,'linear','extrap')); 
+ 
+%Combines measured BERs with estimated BERs into a single vector for analysis. 
+QPSK_BER = [No_of_error_bits_QPSK_Binary estimated_BER_QPSK]; 
+ 
+  %%%%%%%%%%%%%%% End of BER CALCULATION %%%%%%%%%%%%%%%%%%%%%%% 
+   
+   
+%%%%%%%%%%%%%%%%%%%%  16 QAM    %%%%%%%%%%%%%%%%%%%%%%% 
+QAM_errors = zeros(1,5); 
+N=255; 
+K=131; 
+ 
+ %here we will use 26200 and will iterate for 1000 times 
+for i=1:1000 
+Generated_data_16QAM=randi([0 1] ,[1,26200]); 
+%%%%%%%%%%%%%%%%%%%%%% BCH Encoder %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+ 
+%Converts data elements to finite field elements for BCH encoding GF(2) 
+GF_2 = gf(reshape(Generated_data_16QAM,[],K)); 
+ 
+%perform BCH encoding, likely using a (N, K) BCH code. 
+%Adds redundant bits to create codewords of length N,  
+% improving error resilience. 
+Encoder_output = bchenc(GF_2,N,K); 
+ 
+%Reshapes the encoded data into a single-row vector  
+% for subsequent processing. 
+Encoder_output=reshape(Encoder_output.x,1,[]); 
+ 
+%Calculates the length of the encoded data, 
+QAM_Length_coded =length(Encoder_output); 
+ 
+%%%%%%%%%%%%%%%%%%%% End of BCH Encoder %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+ 
+%%%%%%%%%%%%%%%% 16QAM Modulation %%%%%%%%%%%%%%%%%%%%%% 
+QAM_mapped=mod16(Encoder_output,sqrt(K/N)); 
+QAM_Length = length(QAM_mapped); 
+%%%%%%%%%%%%%% End of 16QAM Modulation %%%%%%%%%%%%%%%%%%%%%% 
+ 
+ 
+%%%%%%%%%%%%%%%%%%%% Channel %%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+%The code generates and adds noise to a QPSK-modulated signal at different 
+    % Signal-to-Noise Ratios (SNRs) to assess its impact on signal quality and 
+    % performance. 
+for SNR_dB = [5 6 7 8 9] 
+if (i>100 && SNR_dB~=9) 
+continue; 
+end 
+%Calculates noise power spectral density (N0) based 
+% on energy per bit (Eb) and SNR. 
+N0_16QAM= Eb/(10^(SNR_dB/10)); 
+ 
+variance_16QAM = sqrt(N0_16QAM/2); 
+ 
+%Generates random noise with zero mean and variance 
+        % standard deviation for imaginary and real parts 
+noise_real = 1i.*randn(1,QAM_Length).*variance_16QAM; 
+noise_complex = randn(1,QAM_Length).*variance_16QAM ; 
+QAM_noise = noise_real + noise_complex; 
+%Add noise to modulated signal 
+Output_Signal_16QAM_Noise = transpose(QAM_mapped)+QAM_noise; 
+ 
+%%%%%%%%%%%%%%%%%%%%End of Channel %%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+ 
+%%%%%%%%%%%%%%%% 16QAM DeModulation %%%%%%%%%%%%%%%%%%%%%% 
+QAM_demapped=demod16(Output_Signal_16QAM_Noise,sqrt(K/N)); 
+%%%%%%%%%%%%%% End of16QAM DeModulation %%%%%%%%%%%%%%%%%%%%%% 
+ 
+%%%%%%%%%%%%%%%%%% Deconding %%%%%%%%%%%%%%%%%%%%%%%%%%% 
+%Converts data elements to finite field elements for BCH decoding (using gf). 
+GF_2_DECODED=gf(reshape(QAM_demapped,[],N)); 
+ 
+%Attempts to detect and correct errors within codewords,  
+% recovering original data. 
+QAM_decodded=bchdec(GF_2_DECODED,N,K); 
+ 
+%Reshapes the decoded data (QAM_decodded.x) back  
+% into a single-row vector for further processing. 
+QAM_decodded=reshape(QAM_decodded.x,1,[]); 
+%%%%%%%%%%%%%%%% End of decoding %%%%%%%%%%%%%%%%%%%%%%%%% 
+ 
+        %%%%%%%%%%%%%%% BER CALCULATION %%%%%%%%%%%%%%%%%%%%%%% 
+       % Accesses an element of the vector QAM_errors at an index based on the current SNR 
+value 
+        %  minus 4. This vector likely stores error counts for different SNRs. 
+QAM_errors(SNR_dB-4)=QAM_errors(SNR_dB-4)+biterr(Generated_data_16QAM,QAM_decodded); 
+end 
+end 
+ 
+%normalizes error counts based on the total number 
+% of bits transmitted for most SNR values. 
+QAM_errors(1:end-1)=QAM_errors(1:end-1)/2620000; 
+QAM_errors(end)=QAM_errors(end)/26200000; 
+%%%%%%%%%%%%%%%%%%% Interpolation between 9 and 15 %%%%%%%%%%%%%%%%%%%%5 
+x_QAM = [8 9]; 
+BER_8_9_QAM = QAM_errors(4:5); 
+xq_QAM=[10 11 12 13 14 15]; 
+ 
+%Takes the logarithm of BER_8_9_QPSK to linearize the BER curve. 
+%Interpolates linearly between log(BER) values at x_QPSK 
+% to estimate log(BER) at linear_interpolation_QPSK 
+%Extrapolates beyond the known range using linear assumptions. 
+%Takes the exponential to get estimated BER values at linear_interpolation_QPSK. 
+vq_QAM = exp(interp1(x_QAM,log(BER_8_9_QAM ),xq_QAM,'linear','extrap')); 
+ 
+%Combines measured BERs with estimated BERs into a single vector for analysis. 
+QAM_BER = [QAM_errors vq_QAM ]; 
+       %%%%%%%%%%%%%%% End of BER CALCULATION %%%%%%%%%%%%%%%%%%%%%%% 
+       
+ 
+%%%%%%%%%%%%%%%%%%%%%%%%%%% plotting %%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+figure; 
+SNR_dB = 5:1:15 ; 
+semilogy(SNR_dB,QPSK_BER,'g','linewidth',1.5) 
+hold on; 
+semilogy(SNR_dB,QAM_BER,'r','linewidth',1.5) 
+xlabel('Eb/No(dB)'); 
+ylabel('BER'); 
+title("BER curve for (255,131)BCH code Vs uncoded QPSK") 
+legend("uncoded QPSK","16QAM coded with BCH code"); 
+ 
+ 
+ 
+ 
+ 
+ 
+function[QAM_16_Data]=mod16(Data,A) 
+No_of_bits=length(Data); 
+padding=4-mod(No_of_bits,4); 
+if padding~=4 
+    Data(end+1:end+padding)=0; 
+end 
+ 
+QAM_16_Data=zeros(No_of_bits/4,1); 
+ 
+k = 1; 
+for B = 1 : 4 : No_of_bits 
+    % 0000 mapped to -3-3i 
+    if(Data(B) == 0 && Data(B+1) == 0 && Data(B+2)== 0 && Data(B+3)==0)%0000 
+        QAM_16_Data(k) = -3*A-A*3i; 
+        % 0110 mapped to -1+3i 
+    elseif(Data(B) ==0 && Data(B+1) == 1&& Data(B+2)==1 && Data(B+3)==0)%0110 
+        QAM_16_Data(k) = -A+3*A*1i; 
+    % 0101 mapped to -1-1i 
+    elseif(Data(B) ==0 && Data(B+1) == 1&& Data(B+2)==0 && Data(B+3)==1)%0101 
+        QAM_16_Data(k) = -A-A*1i; 
+    % 0001 mapped to -3-1i 
+    elseif(Data(B) ==0 && Data(B+1) == 0&& Data(B+2)==0 && Data(B+3)==1)%0001 
+        QAM_16_Data(k) = -3*A-A*1i; 
+    % 1000 mapped to 3-3i 
+    elseif(Data(B) ==1 && Data(B+1) == 0&& Data(B+2)==0 && Data(B+3)==0)%1000 
+        QAM_16_Data(k) =3*A-3*A*1i; 
+    % 1011 mapped to 3+1i 
+    elseif(Data(B) ==1 && Data(B+1) == 0&& Data(B+2)==1 && Data(B+3)==1)%1011 
+        QAM_16_Data(k) =3*A+A*1i; 
+    % 1110 mapped to A+3*A*1i 
+    elseif(Data(B) ==1 && Data(B+1) == 1&& Data(B+2)==1 && Data(B+3)==0)%1110 
+        QAM_16_Data(k) = A+3*A*1i; 
+    % 0111 mapped to -1+1i 
+    elseif(Data(B) ==0 && Data(B+1) == 1&& Data(B+2)==1 && Data(B+3)==1)%0111 
+        QAM_16_Data(k) = -A+A*1i; 
+    % 1010 mapped to 3+3i 
+    elseif(Data(B) ==1 && Data(B+1) == 0&& Data(B+2)==1 && Data(B+3)==0)%1010 
+        QAM_16_Data(k) = 3*A+3*A*1i; 
+    % 1100 mapped to 1-3i 
+    elseif(Data(B) ==1 && Data(B+1) == 1&& Data(B+2)==0 && Data(B+3)==0)%1100 
+        QAM_16_Data(k) =A-3*A*1i; 
+    % 1101 mapped to 1-1i 
+    elseif(Data(B) ==1 && Data(B+1) == 1&& Data(B+2)==0 && Data(B+3)==1)%1101 
+        QAM_16_Data(k) = A-A*1i; 
+    % 1111 mapped to 1+1i 
+    elseif(Data(B) ==1 && Data(B+1) == 1&& Data(B+2)==1 && Data(B+3)==1)%1111 
+        QAM_16_Data(k) =A+A*1i; 
+    % 0010 mapped to -3+3i 
+    elseif(Data(B) ==0 && Data(B+1) == 0&& Data(B+2)==1 && Data(B+3)==0)%0010 
+        QAM_16_Data(k) = -3*A+A*3*1i; 
+    % 1001 mapped to 3-1i 
+    elseif(Data(B) ==1 && Data(B+1) == 0&& Data(B+2)==0 && Data(B+3)==1)%1001 
+        QAM_16_Data(k) =3*A-A*1i; 
+    % 0100 mapped to -1-3i 
+    elseif(Data(B) ==0 && Data(B+1) == 1&& Data(B+2)==0 && Data(B+3)==0)%0100 
+        QAM_16_Data(k) = -1*A-A*3*1i; 
+    % 0011 mapped to -3+1i 
+    else %0011 
+        QAM_16_Data(k) = -3*A+A*1i; 
+    end 
+    k = k + 1; 
+end 
+ 
+end 
+ 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+function[Output_Signal_QAM_16]=demod16(Output_Signal_QAM_16_Noise,A) 
+ L=length(Output_Signal_QAM_16_Noise); 
+ Output_Signal_QAM_16=zeros(4*L,1); 
+QAM_16_Counter = 1; 
+  
+ for j=1:L 
+     if (real(Output_Signal_QAM_16_Noise(j)) >= 0 && imag(Output_Signal_QAM_16_Noise(j))>=0) 
+% ---- first quadarture ---- % 
+         if (real(Output_Signal_QAM_16_Noise(j)) >=2*A && 
+imag(Output_Signal_QAM_16_Noise(j))>=2*A) 
+             Output_Signal_QAM_16(QAM_16_Counter)=1; 
+Output_Signal_QAM_16(QAM_16_Counter+1)=0; Output_Signal_QAM_16(QAM_16_Counter+2)=1; 
+Output_Signal_QAM_16(QAM_16_Counter+3)=0; 
+         elseif(real(Output_Signal_QAM_16_Noise(j))>=2*A && 
+imag(Output_Signal_QAM_16_Noise(j))<=2*A) 
+             Output_Signal_QAM_16(QAM_16_Counter)=1; 
+Output_Signal_QAM_16(QAM_16_Counter+1)=0; 
+Output_Signal_QAM_16(QAM_16_Counter+2)=1;Output_Signal_QAM_16(QAM_16_Counter+3)=1; 
+         elseif(real(Output_Signal_QAM_16_Noise(j))<=2*A && 
+imag(Output_Signal_QAM_16_Noise(j))>=2*A) 
+             Output_Signal_QAM_16(QAM_16_Counter)=1; 
+Output_Signal_QAM_16(QAM_16_Counter+1)=1; 
+Output_Signal_QAM_16(QAM_16_Counter+2)=1;Output_Signal_QAM_16(QAM_16_Counter+3)=0; 
+         else 
+             Output_Signal_QAM_16(QAM_16_Counter)=1; 
+Output_Signal_QAM_16(QAM_16_Counter+1)=1; 
+Output_Signal_QAM_16(QAM_16_Counter+2)=1;Output_Signal_QAM_16(QAM_16_Counter+3)=1; 
+         end 
+     elseif(real(Output_Signal_QAM_16_Noise(j))<=0 && imag(Output_Signal_QAM_16_Noise(j))>=0) 
+% ---- Second quadarture ---- % 
+         if(real(Output_Signal_QAM_16_Noise(j))<=-2*A && 
+imag(Output_Signal_QAM_16_Noise(j))>=2*A) 
+             Output_Signal_QAM_16(QAM_16_Counter)=0; 
+Output_Signal_QAM_16(QAM_16_Counter+1)=0; Output_Signal_QAM_16(QAM_16_Counter+2)=1; 
+Output_Signal_QAM_16(QAM_16_Counter+3)=0; 
+         elseif(real(Output_Signal_QAM_16_Noise(j))<=-2*A && 
+imag(Output_Signal_QAM_16_Noise(j))<=2*A) 
+             Output_Signal_QAM_16(QAM_16_Counter)=0; 
+Output_Signal_QAM_16(QAM_16_Counter+1)=0; 
+Output_Signal_QAM_16(QAM_16_Counter+2)=1;Output_Signal_QAM_16(QAM_16_Counter+3)=1; 
+         elseif(real(Output_Signal_QAM_16_Noise(j))>=-2*A && 
+imag(Output_Signal_QAM_16_Noise(j))>=2*A) 
+             Output_Signal_QAM_16(QAM_16_Counter)=0; 
+Output_Signal_QAM_16(QAM_16_Counter+1)=1; 
+Output_Signal_QAM_16(QAM_16_Counter+2)=1;Output_Signal_QAM_16(QAM_16_Counter+3)=0; 
+         else 
+             Output_Signal_QAM_16(QAM_16_Counter)=0; 
+Output_Signal_QAM_16(QAM_16_Counter+1)=1; 
+Output_Signal_QAM_16(QAM_16_Counter+2)=1;Output_Signal_QAM_16(QAM_16_Counter+3)=1; 
+         end 
+     elseif(real(Output_Signal_QAM_16_Noise(j))<=0 && 
+imag(Output_Signal_QAM_16_Noise(j))<=0)% ---- Third quadarture ---- % 
+         if(real(Output_Signal_QAM_16_Noise(j))<=-2*A && 
+imag(Output_Signal_QAM_16_Noise(j))<=-2*A) 
+             Output_Signal_QAM_16(QAM_16_Counter)=0; 
+Output_Signal_QAM_16(QAM_16_Counter+1)=0; Output_Signal_QAM_16(QAM_16_Counter+2)=0; 
+Output_Signal_QAM_16(QAM_16_Counter+3)=0; 
+         elseif(real(Output_Signal_QAM_16_Noise(j))<=-2*A && 
+imag(Output_Signal_QAM_16_Noise(j))>=-2*A) 
+             Output_Signal_QAM_16(QAM_16_Counter)=0; 
+Output_Signal_QAM_16(QAM_16_Counter+1)=0; 
+Output_Signal_QAM_16(QAM_16_Counter+2)=0;Output_Signal_QAM_16(QAM_16_Counter+3)=1; 
+         elseif(real(Output_Signal_QAM_16_Noise(j))>=-2*A && 
+imag(Output_Signal_QAM_16_Noise(j))<=-2*A) 
+             Output_Signal_QAM_16(QAM_16_Counter)=0; 
+Output_Signal_QAM_16(QAM_16_Counter+1)=1; 
+Output_Signal_QAM_16(QAM_16_Counter+2)=0;Output_Signal_QAM_16(QAM_16_Counter+3)=0; 
+         else 
+             Output_Signal_QAM_16(QAM_16_Counter)=0; 
+Output_Signal_QAM_16(QAM_16_Counter+1)=1; 
+Output_Signal_QAM_16(QAM_16_Counter+2)=0;Output_Signal_QAM_16(QAM_16_Counter+3)=1; 
+         end 
+     else % ---- Fourth quadarture ---- % 
+         if(real(Output_Signal_QAM_16_Noise(j))>=2*A && 
+imag(Output_Signal_QAM_16_Noise(j))<=-2*A) 
+             Output_Signal_QAM_16(QAM_16_Counter)=1; 
+Output_Signal_QAM_16(QAM_16_Counter+1)=0; Output_Signal_QAM_16(QAM_16_Counter+2)=0; 
+Output_Signal_QAM_16(QAM_16_Counter+3)=0; 
+         elseif(real(Output_Signal_QAM_16_Noise(j))>=2*A && 
+imag(Output_Signal_QAM_16_Noise(j))>=-2*A) 
+             Output_Signal_QAM_16(QAM_16_Counter)=1; 
+Output_Signal_QAM_16(QAM_16_Counter+1)=0; 
+Output_Signal_QAM_16(QAM_16_Counter+2)=0;Output_Signal_QAM_16(QAM_16_Counter+3)=1; 
+         elseif(real(Output_Signal_QAM_16_Noise(j))<=2*A && 
+imag(Output_Signal_QAM_16_Noise(j))<=-2*A) 
+             Output_Signal_QAM_16(QAM_16_Counter)=1; 
+Output_Signal_QAM_16(QAM_16_Counter+1)=1; 
+Output_Signal_QAM_16(QAM_16_Counter+2)=0;Output_Signal_QAM_16(QAM_16_Counter+3)=0; 
+         else 
+             Output_Signal_QAM_16(QAM_16_Counter)=1; 
+Output_Signal_QAM_16(QAM_16_Counter+1)=1; 
+Output_Signal_QAM_16(QAM_16_Counter+2)=0;Output_Signal_QAM_16(QAM_16_Counter+3)=1; 
+         end 
+     end 
+     QAM_16_Counter = QAM_16_Counter + 4; 
+ end 
+end 
+
+clc 
+clear all; 
+ 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%5 
+%%%%%%%%%%% convolutional code (2,3,k) %%%%%%%%%%% 
+%%%%% input_bits=3; 
+%%%%% output_bits=2; 
+ 
+%%%%%%%% no of bits to be encoded %%%%%%%%%%5 
+No_of_bits = 1000; 
+ 
+% This line creates a random sequence of bits (0s and 1s) 
+% to be used as input for a convolutional encoding process. 
+u=randi([0 1],1,No_of_bits) 
+ 
+% Creates an empty vectors to store the first and second 
+% substreams. 
+u1=zeros(1,No_of_bits/2); 
+u2=zeros(1,No_of_bits/2); 
+j=1; 
+k=1; 
+ 
+%Iterates through odd-indexed elements of  
+% u (1st, 3rd, 5th, ...). 
+%Assigns these bits to u1 in their original order. 
+for i=1:2:No_of_bits 
+    u1(j)=u(1,i); 
+    j=j+1; 
+end 
+ 
+%Iterates through even-indexed elements of  
+% u (2nd, 4th, 6th, ...). 
+%Assigns these bits to u2 in their original order. 
+for i=2:2:No_of_bits 
+    u1(k)=u(1,i); 
+    k=k+1; 
+end 
+g1_1=[0 1]; 
+g1_2=[1 1]; 
+g1_3=[0 0]; 
+g2_1=[1 1]; 
+g2_2=[1 0]; 
+g2_3=[1 1]; 
+ 
+%Combines input bits with generator sequences to produce encoded  
+% outputs with enhanced error-correction capabilities. 
+%The modulo-2 operation ensures the output bits are binary (0 or 1). 
+v0=mod(my_conv(u1,g1_1)+my_conv(u2,g2_1),2) 
+v1=mod(my_conv(u1,g1_2)+my_conv(u2,g2_2),2) 
+v2=mod(my_conv(u1,g1_3)+my_conv(u2,g2_3),2) 
+ 
+ 
+v=[]; 
+ 
+%This code merges three separately encoded data streams into a single vector, 
+likely for further processing or transmission. 
+%Steps: 
+for l=1:501 
+    v=[v v0(l) v1(l) v2(l)]; 
+end 
+v 
+ 
+ 
+function [Y]=my_conv(x,h) 
+ 
+m=length(x); 
+n=length(h); 
+X=[x,zeros(1,n)]; 
+H=[h,zeros(1,m)]; 
+for i=1:n+m-1 
+    Y(i)=0; 
+    for j=1:m 
+        if(i-j+1>0) 
+            Y(i)=Y(i)+X(j)*H(i-j+1); 
+        else 
+        end 
+    end 
+end 
+end 
